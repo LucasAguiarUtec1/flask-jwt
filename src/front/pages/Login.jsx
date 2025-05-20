@@ -1,44 +1,35 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer";
+import { login } from "../store";
 
 export const Login = () => {
+    const { store, dispatch } = useGlobalReducer();
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
-    const handlerLogin = (e) => {
+    const handlerLogin = async (e) => {
         e.preventDefault()
-        fetch('https://redesigned-tribble-qj6v6jj6xpx3x9jw-3001.app.github.dev/api/login', {
-            method: 'POST',
-            headers: {
-                'Content-type': 'application/json'
-            },
-            body: JSON.stringify({
-                'email': email,
-                'password': password
-            })
-        })
-            .then(response => {
-                return response.json().then(data => {
-                    if (!response.ok) {
-                        throw new Error(data.msg || 'Error desconocido');
-                    }
-                    return data;
-                })
-            })
-            .then(data => {
-                localStorage.setItem('apiToken', data.token)
-                console.log(`Token ${data.token}`);
-                navigate('/protected')
-            })
-            .catch(error => {
-                alert(error.message);
-            })
+        
+        const resp = await login(email, password, dispatch);
+        if (!resp) {
+            if (store.messageError !== '') {
+                alert(store.messageError);
+            }
+            else {
+                alert("Ocurrio un error al intentar iniciar sesion");
+            }
+        }
+        else {
+            sessionStorage.setItem('token', resp.token)
+            navigate('/protected');
+        }
     }
 
     return (
         <div className="container-fluid d-flex flex-column align-items-center mt-4">
-            <h1 className="mb-5">Este es el login</h1>
+            <h1 className="mb-5">Iniciar sesion</h1>
             <form>
                 <div className="mb-3">
                     <label className="me-1">Correo electronico</label>
@@ -49,8 +40,9 @@ export const Login = () => {
                     <input onChange={(e) => setPassword(e.target.value)} id="pass" type="password"></input>
                 </div>
 
-                <div className="d-flex mt-3">
-                    <button className="mx-auto" onClick={handlerLogin}>Login</button>
+                <div className="d-flex mt-4">
+                    <button className="mx-3" onClick={handlerLogin}>Login</button>
+                    <button onClick={() => navigate('/signup')}>Registrarse</button>
                 </div>
             </form>
         </div>

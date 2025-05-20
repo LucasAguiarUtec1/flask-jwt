@@ -1,50 +1,40 @@
 import React, { useState } from "react";
+import { signup } from "../store";
+import useGlobalReducer from "../hooks/useGlobalReducer";
+import { useNavigate } from "react-router-dom";
 
 export const Signup = () => {
-
+    const navigate = useNavigate();
+    const { store, dispatch } = useGlobalReducer();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
 
-    const handlerRegister = (e) => {
+    const handlerRegister = async (e) => {
         e.preventDefault()
         if (password !== confirmPassword) {
             alert('Las Contraseñas Deben Coincidir')
         }
         else {
-            fetch('https://redesigned-tribble-qj6v6jj6xpx3x9jw-3001.app.github.dev/api/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    'email': email,
-                    'password': password
-                })
-            })
-                .then(async response => {
-                    const data = await response.json();
-                    if (!response.ok) {
-                        throw new Error(data.msg || 'Error desconocido');
-                    }
-                    return data;
-                })
-                .then(data => {
-                    alert('Usuario creado con exito');
-                    setConfirmPassword('');
-                    setEmail('');
-                    setPassword('');
-                })
-                .catch(error => {
-                    alert(error.message)
-                })
-
+            const resp = await signup(email, password, dispatch);
+            if (!resp) {
+                if (store.messageError !== '') {
+                    alert(store.messageError);
+                }
+                else {
+                    alert('Ocurrio un problema al intentar registrarte');
+                }
+            }
+            else {
+                alert("Se ha registrado con exito, ahora podra iniciar sesion");
+                navigate('/login');
+            }
         }
     }
 
     return (
         <div className="container-fluid d-flex flex-column align-items-center mt-4">
-            <h1 className="mb-5">Este es el login</h1>
+            <h1 className="mb-5">Resgitro</h1>
             <form>
                 <div className="mb-3">
                     <label className="me-1">Correo electronico</label>

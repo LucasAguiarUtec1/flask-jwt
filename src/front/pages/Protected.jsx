@@ -1,41 +1,56 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Navbar } from "../components/Navbar";
+import { protectedRoute } from "../store";
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 export const Protected = () => {
     const [msg, setMsg] = useState('');
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
+    const { store, dispatch } = useGlobalReducer();
 
-    useEffect(() => {
-        const apiToken = localStorage.getItem('apiToken');
+useEffect(() => {
+    const apiToken = sessionStorage.getItem('token');
+    const checkAccess = async () => {
         if (!apiToken || apiToken === '') {
             navigate('/login');
             return;
         }
 
-        fetch('https://redesigned-tribble-qj6v6jj6xpx3x9jw-3001.app.github.dev/api/protected', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiToken}`
+        try {
+            const success = await protectedRoute(apiToken, dispatch);
+
+            if (!success) {
+                alert(store.messageError || "No autorizado");
+                navigate('/login');
+                return;
             }
-        })
-        .then(response => {
-            return response.json().then(data => {
-                if (!response.ok) {
-                    throw new Error('Token invalido');
-                }
-                setMsg(data.msg);
-            });
-        })
-        .catch(error => {
-            alert(error.message);
+
+            setMsg(store.protectedMessage);
+        } catch (error) {
+            console.error("Error en protectedRoute:", error);
+            alert("Hubo un error en la autenticación.");
             navigate('/login');
-        });
-    }, [navigate]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    checkAccess();
+}, [navigate, store.messageError, store.protectedMessage]);
+
 
     return (
         <div className="fluid-container">
-            <h1>{msg}</h1>
+            <Navbar />
+            {loading ? (
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+            ) : (
+                <h1>{msg}</h1>
+            )}
         </div>
     );
 };
